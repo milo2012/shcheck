@@ -23,6 +23,10 @@ import sys
 import ssl
 from optparse import OptionParser
 
+hstsList=[]
+xssList=[]
+cspList=[]
+xframeOptionsList=[]
 
 class bcolors:
     HEADER = '\033[95m'
@@ -275,6 +279,18 @@ def main(options, targets):
                         continue
                     print('[!] Missing security header: {}'.format(
                         colorize(safeh, sec_headers.get(safeh))))
+                    global hstsList
+                    global cspList
+                    global xssList
+                    global xframeOptionsList
+                    if safeh=='Strict-Transport-Security':
+                        hstsList.append(target)
+                    if safeh=='Content-Security-Policy':
+                        cspList.append(target)
+                    if safeh=='X-XSS-Protection':
+                        xssList.append(target)
+                    if safeh=='X-Frame-Options':
+                        xframeOptionsList.append(target)
 
             if information:
                 i_chk = False
@@ -303,7 +319,25 @@ def main(options, targets):
                     print("[*] No caching headers detected")
 
             #report(rUrl, safe, unsafe)
-
+    print("\n-------------------------------------------------------")
+    print("----------------------- Results -----------------------")
+    print("-------------------------------------------------------")
+    if len(hstsList)>0:
+        print("\nStrict-Transport-Security")
+        for x in hstsList:
+            print(x)
+    if len(xssList)>0:
+        print("\nX-XSS-Protection")
+        for x in xssList:
+            print(x)
+    if len(cspList)>0:
+        print("\nContent-Security-Policy")
+        for x in cspList:
+            print(x)
+    if len(xframeOptionsList)>0:
+        print("\nX-Frame-Options")
+        for x in xframeOptionsList:
+            print(x)
 
 if __name__ == "__main__":
 
@@ -344,3 +378,4 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
     main(options, args)
+

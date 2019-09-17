@@ -80,8 +80,8 @@ def banner():
     print("=======================================================")
     print(" > shcheck.py - meliot.................................")
     print("-------------------------------------------------------")
-    print(" Simple tool to check security headers on a webserver ")
-    print("=======================================================")
+    #print(" Simple tool to check security headers on a webserver ")
+    #print("=======================================================")
     print()
 
 
@@ -132,20 +132,20 @@ def normalize(target):
         return target
 
 
-def print_error(e):
+def print_error(target,e):
     if isinstance(e, ValueError):
         print("Unknown url type")
 
     if isinstance(e, urllib.error.HTTPError):
-            print("[!] URL Returned an HTTP error: {}".format(
+            print("[!] {} returned an HTTP error: {}".format(target, 
                 colorize(str(e.code), 'error')))
 
     if isinstance(e, urllib.error.URLError):
             if "CERTIFICATE_VERIFY_FAILED" in str(e.reason):
                 print("SSL: Certificate validation error.\nIf you want to \
     ignore it run the program with the \"-d\" option.")
-            else:
-                print("Target host seems to be unreachable ({})".format(e.reason))
+            #else:
+            #    print("Target host seems to be unreachable ({})".format(e.reason))
 
 
 def check_target(target, options):
@@ -178,13 +178,14 @@ def check_target(target, options):
             response = urllib.request.urlopen(request, timeout=10)
 
     except Exception as e:
-        print_error(e)
-        sys.exit(1)
+        print_error(target,e)
+        #sys.exit(1)
 
     if response is not None:
         return response
-    print("Couldn't read a response from server.")
-    sys.exit(3)
+    #print("Couldn't read a response from server.")
+    #sys.exit(3)
+    return None
 
 
 def is_https(target):
@@ -242,65 +243,66 @@ def main(options, targets):
 
         # Check if target is valid
         response = check_target(target, options)
-        rUrl = response.geturl()
+        if not isinstance(response,type(None)):
+            rUrl = response.geturl()
 
-        print("[*] Analyzing headers of {}".format(colorize(target, 'info')))
-        print("[*] Effective URL: {}".format(colorize(rUrl, 'info')))
-        parse_headers(response.getheaders())
-        for safeh in sec_headers:
-            if safeh in headers:
-                safe += 1
+            print("\n[*] Analyzing headers of {}".format(colorize(target, 'info')))
+            #print("[*] Effective URL: {}".format(colorize(rUrl, 'info')))
+            parse_headers(response.getheaders())
+            for safeh in sec_headers:
+                if safeh in headers:
+                    safe += 1
 
-                # Taking care of special headers that could have bad values
+                    # Taking care of special headers that could have bad values
 
-                # X-XSS-Protection Should be enabled
-                if safeh == 'X-XSS-Protection' and headers.get(safeh) == '0':
-                    print("[*] Header {} is present! (Value: {})".format(
-                            colorize(safeh, 'ok'),
-                            colorize(headers.get(safeh), 'warning')))
+                    # X-XSS-Protection Should be enabled
+                    #if safeh == 'X-XSS-Protection' and headers.get(safeh) == '0':
+                    #    print("[*] Header {} is present! (Value: {})".format(
+                    #            colorize(safeh, 'ok'),
+                    #            colorize(headers.get(safeh), 'warning')))
 
-                # Printing generic message if not specified above
+                    # Printing generic message if not specified above
+                    #else:
+                    #    print("[*] Header {} is present! (Value: {})".format(
+                    #            colorize(safeh, 'ok'),
+                    #            headers.get(safeh)))
                 else:
-                    print("[*] Header {} is present! (Value: {})".format(
-                            colorize(safeh, 'ok'),
-                            headers.get(safeh)))
-            else:
-                unsafe += 1
+                    unsafe += 1
 
-                # HSTS works obviously only on HTTPS
-                if safeh == 'Strict-Transport-Security' and not is_https(rUrl):
-                    unsafe -= 1
-                    continue
-                print('[!] Missing security header: {}'.format(
-                    colorize(safeh, sec_headers.get(safeh))))
+                    # HSTS works obviously only on HTTPS
+                    if safeh == 'Strict-Transport-Security' and not is_https(rUrl):
+                        unsafe -= 1
+                        continue
+                    print('[!] Missing security header: {}'.format(
+                        colorize(safeh, sec_headers.get(safeh))))
 
-        if information:
-            i_chk = False
-            print()
-            for infoh in information_headers:
-                if infoh in headers:
-                    i_chk = True
-                    print("[!] Possible information disclosure: \
-header {} is present! (Value: {})".format(
-                            colorize(infoh, 'warning'),
-                            headers.get(infoh)))
-            if not i_chk:
-                print("[*] No information disclosure headers detected")
+            if information:
+                i_chk = False
+                print()
+                for infoh in information_headers:
+                    if infoh in headers:
+                        i_chk = True
+                        print("[!] Possible information disclosure: \
+    header {} is present! (Value: {})".format(
+                                colorize(infoh, 'warning'),
+                                headers.get(infoh)))
+                if not i_chk:
+                    print("[*] No information disclosure headers detected")
 
-        if cache_control:
-            c_chk = False
-            print()
-            for cacheh in cache_headers:
-                if cacheh in headers:
-                    c_chk = True
-                    print("[!] Cache control header {} is present! \
-Value: {})".format(
-                            colorize(cacheh, 'info'),
-                            headers.get(cacheh)))
-            if not c_chk:
-                print("[*] No caching headers detected")
+            if cache_control:
+                c_chk = False
+                print()
+                for cacheh in cache_headers:
+                    if cacheh in headers:
+                        c_chk = True
+                        print("[!] Cache control header {} is present! \
+    Value: {})".format(
+                                colorize(cacheh, 'info'),
+                                headers.get(cacheh)))
+                if not c_chk:
+                    print("[*] No caching headers detected")
 
-        report(rUrl, safe, unsafe)
+            #report(rUrl, safe, unsafe)
 
 
 if __name__ == "__main__":
